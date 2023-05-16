@@ -1,0 +1,76 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  PYTHON_VERSION: "3.11.x"
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "${{ env.PYTHON_VERSION }}"
+      - run: pip install pre-commit
+      - uses: actions/cache@v3
+        id: pre-commit-cache
+        with:
+          path: ~/.cache/pre-commit
+          key: key-0
+      - run: pip install printf-log-formatter black isort
+      - run: pre-commit run --all-files
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --entrypoint redis-server
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.11.x" ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "${{ matrix.python-version }}"
+      - uses: actions/cache@v3
+        id: poetry-cache
+        with:
+          path: ~/.local
+          key: ${{ matrix.python-version }}-0
+      - uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: false
+          version: latest
+      - uses: actions/cache@v3
+        id: cache-venv
+        with:
+          path: .venv
+          key: ${{ hashFiles('**/poetry.lock') }}-${{ matrix.python-version }}-0
+      - run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -U pip
+          poetry install --no-interaction --no-root
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          coverage run -m pytest tests
+          coverage xml
+          coverage report

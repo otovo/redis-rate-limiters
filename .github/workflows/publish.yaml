@@ -1,0 +1,13 @@
+name: publish package
+
+on:
+  release:
+    types: [published, edited]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: snok/.github/workflows/publish@main
+        with:
+          token: ${{ secrets.PYPI_TOKEN }}
