@@ -20,11 +20,11 @@ async def test_sync_token_bucket():
     assert timedelta(seconds=1) < datetime.now() - start < timedelta(seconds=2)
 
 
-async def test_max_sleep():
+async def test_sync_max_sleep():
     name = uuid4().hex[:6]
     e = (
         r'Scheduled to sleep \`[0-9].[0-9]+\` seconds. This exceeds the maximum accepted sleep time of \`0\.1\`'
         r' seconds.'
     )
     with pytest.raises(MaxSleepExceededError, match=e), sync_tokenbucket_factory(name=name, max_sleep=0.1)():
-        ...
+        pass

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from types import TracebackType
 from typing import TYPE_CHECKING, ClassVar
 
@@ -22,36 +22,14 @@ class SemaphoreBase(LuaScriptBase):
 
     script_name: ClassVar[str] = 'semaphore.lua'
 
-    def parse_timestamp(self, timestamp: int) -> float:
-        # Parse to datetime
-        wake_up_time = datetime.fromtimestamp(timestamp / 1000)
-
-        # Establish the current time, with a very small buffer for processing time
-        now = datetime.now() + timedelta(milliseconds=5)
-
-        # Return if we don't need to sleep
-        if wake_up_time < now:
-            return 0
-
-        # Establish how long we should sleep
-        sleep_time = (wake_up_time - now).total_seconds()
-
-        # Raise an error if we exceed the maximum sleep setting
-        if self.max_sleep != 0.0 and sleep_time > self.max_sleep:
-            raise MaxSleepExceededError(
-                f'Token bucket rate limiter scheduled to sleep `{sleep_time}` seconds. '
-                f'This exceeds the maximum accepted sleep time of `{self.max_sleep}` seconds.'
-            )
-
-        logger.info('Sleeping %s seconds', sleep_time)
-        return sleep_time
-
     @property
     def key(self) -> str:
+        """Key to use for the Semaphore list."""
         return f'{{limiter}}:semaphore:{self.name}'
 
     @property
     def exists(self) -> str:
+        """Key to use when checking if the Semaphore list has been created or not."""
         return f'{{limiter}}:semaphore:{self.name}-exists'
 
     def __str__(self) -> str:

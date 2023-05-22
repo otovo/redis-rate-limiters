@@ -23,11 +23,11 @@ async def test_sync_semaphore():
 
 
 def _run(name, sleep):
-    with sync_semaphore_factory(name=name, capacity=1, max_sleep=0.1)():
+    with sync_semaphore_factory(name=name, capacity=1, max_sleep=0.1, expiry=1)():
         time.sleep(sleep)
 
 
-async def test_max_sleep():
+async def test_sync_max_sleep():
     name = uuid4().hex[:6]
     threading.Thread(target=_run, args=(name, 1)).start()
     time.sleep(0.1)
