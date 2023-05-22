@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "limiters"
-version = "0.1.0"
+version = "0.1.1"
 description = "Distributed rate limiters"
 license = "BSD-4-Clause"
 authors = ["Sondre Lillebø Gundersen <sondrelg@live.no>"]
