@@ -54,6 +54,10 @@ pytest-socket = "*"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.pytest.ini_options]
+addopts = "--allow-hosts=127.0.0.1,::1"
+asyncio_mode = "auto"
+
 [tool.black]
 line-length = 120
 skip-string-normalization = true
@@ -112,3 +116,16 @@ exclude = [
 fixture-parentheses=false
 mark-parentheses=false
 parametrize-names-type="csv"
+
+[tool.mypy]
+python_version = 3.11
+strict = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
+warn_no_return = false
+show_traceback = true
+plugins = ["pydantic.mypy"]
+
+[tool."pydantic-mypy"]
+warn_untyped_fields = true
