@@ -35,8 +35,8 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-pydantic = "^1.10.7"
-redis = "^4.5.5"
+pydantic = ">1"
+redis = ">4.2"
 
 [tool.poetry.group.development.dependencies]
 pre-commit = "^3"
