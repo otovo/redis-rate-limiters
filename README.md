@@ -33,6 +33,7 @@ Here's how you might use the async version:
 import asyncio
 
 from httpx import AsyncClient
+from redis.asyncio import Redis
 
 from limiters import AsyncSemaphore
 
@@ -41,7 +42,8 @@ limiter = AsyncSemaphore(
     name="foo",    # name of the resource you are limiting traffic for
     capacity=5,    # allow 5 concurrent requests
     max_sleep=30,  # raise an error if it takes longer than 30 seconds to acquire the semaphore
-    expiry=30      # set expiry on the semaphore keys in Redis to prevent deadlocks
+    expiry=30,      # set expiry on the semaphore keys in Redis to prevent deadlocks
+    connection=Redis.from_url("redis://localhost:6379"),
 )
 
 async def get_foo():
@@ -60,6 +62,7 @@ and here is how you might use the sync version:
 
 ```python
 import requests
+from redis import Redis
 
 from limiters import SyncSemaphore
 
@@ -68,7 +71,8 @@ limiter = SyncSemaphore(
     name="foo",
     capacity=5,
     max_sleep=30,
-    expiry=30
+    expiry=30,
+    connection=Redis.from_url("redis://localhost:6379"),
 )
 
 def main():
@@ -89,6 +93,7 @@ Here's how you might use the async version:
 import asyncio
 
 from httpx import AsyncClient
+from redis.asyncio import Redis
 
 from limiters import AsyncTokenBucket
 
@@ -99,6 +104,7 @@ limiter = AsyncTokenBucket(
     refill_frequency=1,  # add tokens every second
     refill_amount=1,     # add 1 token when refilling
     max_sleep=30,        # raise an error there are no free tokens for 30 seconds
+    connection=Redis.from_url("redis://localhost:6379"),
 )
 
 async def get_foo():
@@ -116,6 +122,7 @@ and here is how you might use the sync version:
 
 ```python
 import requests
+from redis import Redis
 
 from limiters import SyncTokenBucket
 
@@ -126,6 +133,7 @@ limiter = SyncTokenBucket(
     refill_frequency=1,
     refill_amount=1,
     max_sleep=30,
+    connection=Redis.from_url("redis://localhost:6379"),
 )
 
 def main():
