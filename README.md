@@ -1,28 +1,29 @@
-# Limiters
+# Redis rate limiters
 
-A library for regulating traffic with respect to concurrency or time. It Implements a [semaphore](#semaphore) and [token bucket](#token-bucket).
+A library for regulating traffic with respect to concurrency or time. 
+It sync and async context managers for a [semaphore](#semaphore)- and a [token bucket](#token-bucket) 
+implementation.
 
-The data structures are distributed, using Redis, and leverage Lua scripts to reduce latency.
-Implements both async and sync implementations.
+The rate limiting implementations are distributed, using Redis, 
+and leverages Lua scripts to greatly improve performance and simplify the code. Lua scripts
+run on the Redis server, and make each implementation fully atomic.
 
-Compatible with redis-clusters. Currently only supports Python 3.11, but adding support for other versions would be trivial.
+Both implementations are compatible for use with redis-clusters. 
+We currently only support Python 3.11, but can add support for older versions if needed.
 
 ## Installation
 
 ```
-pip install limiters
+pip install redis-rate-limiters
 ```
 
 ## Semaphore
 
-The semaphore classes are useful when working with concurrency-based
-rate limits. Say, e.g., you're allowed 5 active requests at the time
-for a given API token.
+The semaphore classes are useful when you have concurrency restrictions; 
+e.g., say you're allowed 5 active requests at the time for a given API token.
 
-On trying to acquire the Semaphore, beware that the client will block
-until the Semaphore is acquired, or the `max_sleep` limit is exceeded.
-
-If the `max_sleep` limit is exceeded, a `MaxSleepExceededError` is raised.
+Beware that the client will block until the Semaphore is acquired, 
+or the `max_sleep` limit is exceeded. If the `max_sleep` limit is exceeded, a `MaxSleepExceededError` is raised.
 
 Here's how you might use the async version:
 
@@ -33,13 +34,13 @@ from httpx import AsyncClient
 
 from limiters import AsyncSemaphore
 
+
 limiter = AsyncSemaphore(
     name="foo",    # name of the resource you are limiting traffic for
     capacity=5,    # allow 5 concurrent requests
     max_sleep=30,  # raise an error if it takes longer than 30 seconds to acquire the semaphore
     expiry=30      # set expiry on the semaphore keys in Redis to prevent deadlocks
 )
-
 
 async def get_foo():
     async with AsyncClient() as client:
@@ -60,13 +61,13 @@ import requests
 
 from limiters import SyncSemaphore
 
+
 limiter = SyncSemaphore(
     name="foo",
     capacity=5,
     max_sleep=30,
     expiry=30
 )
-
 
 def main():
     with limiter:
@@ -89,6 +90,7 @@ from httpx import AsyncClient
 
 from limiters import AsyncTokenBucket
 
+
 limiter = AsyncTokenBucket(
     name="foo",          # name of the resource you are limiting traffic for
     capacity=5,          # hold up to 5 tokens
@@ -97,12 +99,10 @@ limiter = AsyncTokenBucket(
     max_sleep=30,        # raise an error there are no free tokens for 30 seconds
 )
 
-
 async def get_foo():
     async with AsyncClient() as client:
         async with limiter:
             client.get(...)
-
 
 async def main():
     await asyncio.gather(
@@ -117,6 +117,7 @@ import requests
 
 from limiters import SyncTokenBucket
 
+
 limiter = SyncTokenBucket(
     name="foo",
     capacity=5,
@@ -125,10 +126,36 @@ limiter = SyncTokenBucket(
     max_sleep=30,
 )
 
-
 def main():
     with limiter:
         requests.get(...)
+```
+
+## Using them as a decorator
+
+### As a decorator
+
+We don't ship decorators in the package, but if you would
+like to limit the rate at which a whole function is run,
+you can create your own, like this:
+
+```python
+from limiters import AsyncSemaphore
+
+
+# Define a decorator function
+def limit(name, capacity):
+  def middle(f):
+    async def inner(*args, **kwargs):
+      async with AsyncSemaphore(name=name, capacity=capacity):
+        return await f(*args, **kwargs)
+    return inner
+  return middle
+
+
+# Then pass the relevant limiter arguments like this
+@limit(name="foo", capacity=5)
+def fetch_foo(id: UUID) -> Foo:
 ```
 
 ## Contributing
