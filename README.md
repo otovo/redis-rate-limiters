@@ -168,3 +168,18 @@ Contributions are very welcome. Here's how to get started:
 - Run `docker compose up` to run Redis (or run Redis for tests some other way)
 - Make your code changes, with tests
 - Commit your changes and open a PR
+
+## Publishing a new version
+
+To publish a new version:
+
+- Update the package version in the `pyproject.toml`
+- Open [Github releases](https://github.com/otovo/redis-rate-limiters/releases)
+- Press "Draft a new release"
+- Set a tag matching the new version (for example, `v0.4.2`)
+- Set the title matching the tag
+- Add some release notes, explaining what has changed
+- Publish
+
+Once the release is published, our [publish workflow](https://github.com/otovo/redis-rate-limiters/blob/main/.github/workflows/publish.yaml) should be triggered
+to push the new version to PyPI.
