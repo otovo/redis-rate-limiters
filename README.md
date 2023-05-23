@@ -1,14 +1,14 @@
 # Redis rate limiters
 
-A library for regulating traffic with respect to concurrency or time. 
-It sync and async context managers for a [semaphore](#semaphore)- and a [token bucket](#token-bucket) 
+A library for regulating traffic with respect to concurrency or time.
+It sync and async context managers for a [semaphore](#semaphore)- and a [token bucket](#token-bucket)
 implementation.
 
-The rate limiting implementations are distributed, using Redis, 
+The rate limiting implementations are distributed, using Redis,
 and leverages Lua scripts to greatly improve performance and simplify the code. Lua scripts
 run on the Redis server, and make each implementation fully atomic.
 
-Both implementations are compatible for use with redis-clusters. 
+Both implementations are compatible for use with redis-clusters.
 We currently only support Python 3.11, but can add support for older versions if needed.
 
 ## Installation
@@ -19,10 +19,10 @@ pip install redis-rate-limiters
 
 ## Semaphore
 
-The semaphore classes are useful when you have concurrency restrictions; 
+The semaphore classes are useful when you have concurrency restrictions;
 e.g., say you're allowed 5 active requests at the time for a given API token.
 
-Beware that the client will block until the Semaphore is acquired, 
+Beware that the client will block until the Semaphore is acquired,
 or the `max_sleep` limit is exceeded. If the `max_sleep` limit is exceeded, a `MaxSleepExceededError` is raised.
 
 Here's how you might use the async version:

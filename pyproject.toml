@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "limiters"
-version = "0.1.1"
+name = "redis-rate-limiters"
+version = "0.1.0"
 description = "Distributed rate limiters"
 license = "BSD-4-Clause"
 authors = ["Sondre Lillebø Gundersen <sondrelg@live.no>"]
 readme = "README.md"
-homepage = "https://github.com/otovo/limiters"
-repository = "https://github.com/otovo/limiters"
+homepage = "https://github.com/otovo/redis-rate-limiters"
+repository = "https://github.com/otovo/redis-rate-limiters"
 keywords = [
     'async',
     'sync',
