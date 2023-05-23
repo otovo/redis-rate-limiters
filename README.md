@@ -17,7 +17,9 @@ We currently only support Python 3.11, but can add support for older versions if
 pip install redis-rate-limiters
 ```
 
-## Semaphore
+## Usage
+
+### Semaphore
 
 The semaphore classes are useful when you have concurrency restrictions;
 e.g., say you're allowed 5 active requests at the time for a given API token.
@@ -74,7 +76,7 @@ def main():
         requests.get(...)
 ```
 
-## Token bucket
+### Token bucket
 
 The `TocketBucket` classes are useful if you're working with time-based
 rate limits. Say, you are allowed 100 requests per minute, for a given API token.
@@ -131,9 +133,7 @@ def main():
         requests.get(...)
 ```
 
-## Using them as a decorator
-
-### As a decorator
+### Using them as a decorator
 
 We don't ship decorators in the package, but if you would
 like to limit the rate at which a whole function is run,

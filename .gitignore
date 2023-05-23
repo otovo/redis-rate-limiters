@@ -133,3 +133,5 @@ dmypy.json
 *.iml
 .vscode
 .DS_Store
+
+.ruff_cache/
