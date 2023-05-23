@@ -101,6 +101,9 @@ async def test_max_sleep():
 async def test_redis_instructions(connection):
     name = uuid4().hex
 
+    # Run once to warm up - otherwise tests get flaky
+    await run(async_semaphore_factory(name=name, expiry=1), 0)
+
     m: Monitor
     async with connection.monitor() as m:
         await m.connect()
@@ -112,11 +115,9 @@ async def test_redis_instructions(connection):
             str(await m.connection.read_response()),
             # SETNX
             str(await m.connection.read_response()),
-            # RPUSH
+            # BLPOP
             str(await m.connection.read_response()),
             # MULTI
-            str(await m.connection.read_response()),
-            # BLPOP
             str(await m.connection.read_response()),
             # LPUSH
             str(await m.connection.read_response()),
@@ -131,20 +132,18 @@ async def test_redis_instructions(connection):
         # Make sure there are no other commands generated
         with pytest.raises(asyncio.TimeoutError):
             # This will time out if there are no other commands
-            await asyncio.wait_for(timeout=1, fut=m.connection.read_response())
+            print(await asyncio.wait_for(timeout=1, fut=m.connection.read_response()))  # noqa
 
         # Make sure each command conforms to our expectations
 
         assert 'EVALSHA' in commands[0], f'was {commands[0]}'
         assert 'SETNX' in commands[1], f'was {commands[1]}'
         assert f'{{limiter}}:semaphore:{name}-exists' in commands[1], f'was {commands[1]}'
-        assert 'RPUSH' in commands[2], f'was {commands[2]}'
-        assert f'{{limiter}}:semaphore:{name}' in commands[2], f'was {commands[2]}'
-        assert 'BLPOP' in commands[3], f'was {commands[3]}'
-        assert 'MULTI' in commands[4], f'was {commands[4]}'
-        assert 'LPUSH' in commands[5], f'was {commands[5]}'
+        assert 'BLPOP' in commands[2], f'was {commands[2]}'
+        assert 'MULTI' in commands[3], f'was {commands[3]}'
+        assert 'LPUSH' in commands[4], f'was {commands[4]}'
+        assert 'EXPIRE' in commands[5], f'was {commands[5]}'
+        assert f'{{limiter}}:semaphore:{name}' in commands[6], f'was {commands[5]}'
         assert 'EXPIRE' in commands[6], f'was {commands[6]}'
-        assert f'{{limiter}}:semaphore:{name}' in commands[6], f'was {commands[6]}'
-        assert 'EXPIRE' in commands[7], f'was {commands[7]}'
-        assert f'{{limiter}}:semaphore:{name}-exists' in commands[7], f'was {commands[7]}'
-        assert 'EXEC' in commands[8], f'was {commands[8]}'
+        assert f'{{limiter}}:semaphore:{name}-exists' in commands[6], f'was {commands[6]}'
+        assert 'EXEC' in commands[7], f'was {commands[7]}'
