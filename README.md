@@ -174,6 +174,7 @@ Contributions are very welcome. Here's how to get started:
 - Install dependencies with `poetry install`
 - Run `pre-commit install` to set up pre-commit
 - Run `docker compose up` to run Redis (or run Redis for tests some other way)
+- Run `./setup-cluster.sh` to configure the docker-run Redis cluster
 - Make your code changes, with tests
 - Commit your changes and open a PR
 

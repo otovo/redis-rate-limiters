@@ -4,11 +4,13 @@ from typing import Any, ClassVar
 from pydantic import BaseModel
 from redis import Redis as SyncRedis
 from redis.asyncio import Redis as AsyncRedis
+from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster
+from redis.cluster import RedisCluster as SyncRedisCluster
 from redis.commands.core import AsyncScript, Script
 
 
 class LuaScriptBase(BaseModel):
-    connection: SyncRedis | AsyncRedis  # type: ignore[type-arg]
+    connection: SyncRedis | AsyncRedis | SyncRedisCluster | AsyncRedisCluster  # type: ignore[type-arg]
     script_name: ClassVar[str]
     script: Script | AsyncScript = None  # type: ignore
 

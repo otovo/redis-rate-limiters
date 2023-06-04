@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, ClassVar
 from pydantic import Field
 from redis import Redis as SyncRedis
 from redis.asyncio import Redis as AsyncRedis
+from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster
+from redis.cluster import RedisCluster as SyncRedisCluster
 from redis.commands.core import AsyncScript, Script
 
 from limiters import MaxSleepExceededError
@@ -59,7 +61,7 @@ class TokenBucketBase(LuaScriptBase):
 
 class SyncTokenBucket(TokenBucketBase):
     if TYPE_CHECKING:
-        connection: SyncRedis[str]
+        connection: SyncRedis[str] | SyncRedisCluster[str]
         script: Script
 
     def __enter__(self) -> None:
@@ -90,7 +92,7 @@ class SyncTokenBucket(TokenBucketBase):
 
 class AsyncTokenBucket(TokenBucketBase):
     if TYPE_CHECKING:
-        connection: AsyncRedis[str]
+        connection: AsyncRedis[str] | AsyncRedisCluster[str]
         script: AsyncScript
 
     async def __aenter__(self) -> None:
