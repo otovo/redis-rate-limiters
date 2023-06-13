@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize('connection', SYNC_CONNECTIONS)
 async def test_sync_semaphore(connection):
     start = datetime.now()
-    for i in range(5):
+    for _ in range(5):
         with sync_semaphore_factory(connection=connection(), name=f'{uuid4()}', capacity=1):
             time.sleep(0.2)
 
