@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize('connection', SYNC_CONNECTIONS)
 async def test_sync_token_bucket(connection):
     start = datetime.now()
-    for i in range(5):
+    for _ in range(5):
         with sync_tokenbucket_factory(
             connection=connection(), name=f'{uuid4()}', refill_amount=2, refill_frequency=0.2
         ):
