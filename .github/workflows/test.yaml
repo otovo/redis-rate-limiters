@@ -28,17 +28,6 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --entrypoint redis-server
     strategy:
       fail-fast: false
       matrix:
@@ -68,8 +57,16 @@ jobs:
           pip install -U pip
           poetry install --no-interaction --no-root --with=development
         if: steps.cache-venv.outputs.cache-hit != 'true'
+
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: redis-server
+          version: 0
+
       - name: Run tests
         run: |
+          docker compose up -d
+          ./setup-cluster.sh
           source .venv/bin/activate
           coverage run -m pytest tests
           coverage xml
