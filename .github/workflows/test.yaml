@@ -66,6 +66,7 @@ jobs:
       - name: Run tests
         run: |
           docker compose up -d
+          chmod +x ./setup-cluster.sh
           ./setup-cluster.sh
           source .venv/bin/activate
           coverage run -m pytest tests
