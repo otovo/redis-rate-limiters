@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).parent.parent
 
 STANDALONE_URL = 'redis://127.0.0.1:6378'
-CLUSTER_URL = 'redis://127.0.0.1:6379'
+CLUSTER_URL = 'redis://127.0.0.1:6380'
 
 STANDALONE_SYNC_CONNECTION = partial(SyncRedis.from_url, STANDALONE_URL)
 CLUSTER_SYNC_CONNECTION = partial(SyncRedisCluster.from_url, CLUSTER_URL)

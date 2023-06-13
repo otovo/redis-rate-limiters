@@ -11,9 +11,9 @@ from limiters import AsyncSemaphore, AsyncTokenBucket, SyncSemaphore, SyncTokenB
     'klass,port,limiters',
     [
         (SyncRedis, 6378, [SyncSemaphore, SyncTokenBucket]),
-        (SyncRedisCluster, 6379, [SyncSemaphore, SyncTokenBucket]),
+        (SyncRedisCluster, 6380, [SyncSemaphore, SyncTokenBucket]),
         (AsyncRedis, 6378, [AsyncSemaphore, AsyncTokenBucket]),
-        (AsyncRedisCluster, 6379, [AsyncSemaphore, AsyncTokenBucket]),
+        (AsyncRedisCluster, 6380, [AsyncSemaphore, AsyncTokenBucket]),
     ],
 )
 def test_redis_cluster(klass, port, limiters):
