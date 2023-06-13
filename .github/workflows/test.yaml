@@ -28,17 +28,6 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --entrypoint redis-server
     strategy:
       fail-fast: false
       matrix:
@@ -70,6 +59,9 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
       - name: Run tests
         run: |
+          docker compose up -d
+          apt-get update && apt-get install redis-server -y
+          ./setup-cluster.sh
           source .venv/bin/activate
           coverage run -m pytest tests
           coverage xml
