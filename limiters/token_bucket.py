@@ -3,27 +3,22 @@ import logging
 import time
 from datetime import datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar
 
-from pydantic import Field
-from redis import Redis as SyncRedis
-from redis.asyncio import Redis as AsyncRedis
-from redis.commands.core import AsyncScript, Script
+from pydantic import BaseModel, Field
 
 from limiters import MaxSleepExceededError
-from limiters.base import LuaScriptBase
+from limiters.base import AsyncLuaScriptBase, SyncLuaScriptBase
 
 logger = logging.getLogger(__name__)
 
 
-class TokenBucketBase(LuaScriptBase):
+class TokenBucketBase(BaseModel):
     name: str
     capacity: int = Field(gt=0)
     refill_frequency: float = Field(gt=0)
     refill_amount: int = Field(gt=0)
     max_sleep: float = Field(ge=0, default=0.0)
-
-    script_name: ClassVar[str] = 'token_bucket.lua'
 
     def parse_timestamp(self, timestamp: int) -> float:
         # Parse to datetime
@@ -57,10 +52,8 @@ class TokenBucketBase(LuaScriptBase):
         return f'Token bucket instance for queue {self.key}'
 
 
-class SyncTokenBucket(TokenBucketBase):
-    if TYPE_CHECKING:
-        connection: SyncRedis[str]
-        script: Script
+class SyncTokenBucket(TokenBucketBase, SyncLuaScriptBase):
+    script_name: ClassVar[str] = 'token_bucket.lua'
 
     def __enter__(self) -> None:
         """
@@ -88,10 +81,8 @@ class SyncTokenBucket(TokenBucketBase):
         return
 
 
-class AsyncTokenBucket(TokenBucketBase):
-    if TYPE_CHECKING:
-        connection: AsyncRedis[str]
-        script: AsyncScript
+class AsyncTokenBucket(TokenBucketBase, AsyncLuaScriptBase):
+    script_name: ClassVar[str] = 'token_bucket.lua'
 
     async def __aenter__(self) -> None:
         """

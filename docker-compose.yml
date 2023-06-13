@@ -1,8 +1,80 @@
-version: '3.8'
+version: '3'
 
 services:
-  redis:
+
+  # Standalone instance
+
+  redis-standalone:
     image: redis:alpine
     command: redis-server --appendonly yes
     ports:
-      - '127.0.0.1:6379:6379'
+      - '127.0.0.1:6378:6379'
+
+  # Cluster
+
+  redis-leader-1:
+    image: redis:latest
+    restart: always
+    ports:
+      - "127.0.0.1:6380:6379"
+    networks:
+      redis:
+        ipv4_address: 10.5.0.2
+    command: redis-server --cluster-enabled yes
+
+  redis-leader-2:
+    image: redis:latest
+    restart: always
+    ports:
+      - "127.0.0.1:6381:6379"
+    networks:
+      redis:
+        ipv4_address: 10.5.0.3
+    command: redis-server --cluster-enabled yes
+
+  redis-leader-3:
+    image: redis:latest
+    restart: always
+    ports:
+      - "127.0.0.1:6382:6379"
+    networks:
+      redis:
+        ipv4_address: 10.5.0.4
+    command: redis-server --cluster-enabled yes
+
+  redis-follower-1:
+    image: redis:latest
+    restart: always
+    ports:
+      - "127.0.0.1:6383:6379"
+    networks:
+      redis:
+        ipv4_address: 10.5.0.5
+    command: redis-server --cluster-enabled yes
+
+  redis-follower-2:
+    image: redis:latest
+    restart: always
+    ports:
+      - "127.0.0.1:6384:6379"
+    networks:
+      redis:
+        ipv4_address: 10.5.0.6
+    command: redis-server --cluster-enabled yes
+
+  redis-follower-3:
+    image: redis:latest
+    restart: always
+    ports:
+      - "127.0.0.1:6385:6379"
+    networks:
+      redis:
+        ipv4_address: 10.5.0.7
+    command: redis-server --cluster-enabled yes
+
+networks:
+  redis:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16

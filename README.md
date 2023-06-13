@@ -1,14 +1,14 @@
 # Redis rate limiters
 
-A library for regulating traffic with respect to concurrency or time.
-It sync and async context managers for a [semaphore](#semaphore)- and a [token bucket](#token-bucket)
-implementation.
+A library which regulates traffic, with respect to concurrency or time.
+It implements sync and async context managers for a [semaphore](#semaphore)- and a [token bucket](#token-bucket)-implementation.
 
-The rate limiting implementations are distributed, using Redis,
-and leverages Lua scripts to greatly improve performance and simplify the code. Lua scripts
-run on the Redis server, and make each implementation fully atomic.
+The rate limiters are distributed, using Redis, and leverages Lua scripts to
+improve performance and simplify the code. Lua scripts
+run on Redis, and make each implementation fully atomic, while
+also reducing the number of round-trips required.
 
-Both implementations are compatible for use with redis-clusters.
+Use is supported for standalone redis instances, and clusters.
 We currently only support Python 3.11, but can add support for older versions if needed.
 
 ## Installation
@@ -173,7 +173,9 @@ Contributions are very welcome. Here's how to get started:
 - Set up a Python 3.11+ venv, and `pip install poetry`
 - Install dependencies with `poetry install`
 - Run `pre-commit install` to set up pre-commit
-- Run `docker compose up` to run Redis (or run Redis for tests some other way)
+- Install [just](https://just.systems/man/en/) and run `just setup`
+  If you prefer not to install just, just take a look at the justfile and
+  run the commands yourself.
 - Make your code changes, with tests
 - Commit your changes and open a PR
 

@@ -9,12 +9,18 @@ from pydantic import ValidationError
 from redis.asyncio.client import Monitor, Redis
 
 from limiters import AsyncSemaphore, MaxSleepExceededError
-from tests.conftest import delta_to_seconds, run
-from tests.semaphore.conftest import async_semaphore_factory
+from tests.conftest import (
+    ASYNC_CONNECTIONS,
+    STANDALONE_ASYNC_CONNECTION,
+    async_semaphore_factory,
+    delta_to_seconds,
+    run,
+)
 
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.parametrize('connection', ASYNC_CONNECTIONS)
 @pytest.mark.parametrize(
     'n, capacity, sleep, timeout',
     [
@@ -24,7 +30,7 @@ logger = logging.getLogger(__name__)
         (5, 1, 0.1, 0.5),
     ],
 )
-async def test_semaphore_runtimes(n, capacity, sleep, timeout):
+async def test_semaphore_runtimes(connection, n, capacity, sleep, timeout):
     """
     Make sure that the runtime of multiple Semaphore instances conform to our expectations.
 
@@ -32,9 +38,12 @@ async def test_semaphore_runtimes(n, capacity, sleep, timeout):
     a Semaphore with a capacity of 5, where each instance sleeps 1 second, then it should
     always take 1 >= seconds to run those.
     """
+    connection = connection()
     name = f'runtimes-{uuid4()}'
     tasks = [
-        asyncio.create_task(run(async_semaphore_factory(name=name, capacity=capacity), duration=sleep))
+        asyncio.create_task(
+            run(async_semaphore_factory(connection=connection, name=name, capacity=capacity), sleep_duration=sleep)
+        )
         for _ in range(n)
     ]
     before = datetime.now()
@@ -42,28 +51,33 @@ async def test_semaphore_runtimes(n, capacity, sleep, timeout):
     assert timeout <= delta_to_seconds(datetime.now() - before)
 
 
-async def test_sleep_is_non_blocking():
+@pytest.mark.parametrize('connection', ASYNC_CONNECTIONS)
+async def test_sleep_is_non_blocking(connection):
+    connection = connection()
+
     async def _sleep(duration: float) -> None:
         await asyncio.sleep(duration)
 
     tasks = [
         # Create task for semaphore to sleep 1 second
-        asyncio.create_task(run(async_semaphore_factory(), 0)),
+        asyncio.create_task(run(async_semaphore_factory(connection=connection), 0)),
         # And create another task to normal asyncio sleep for 1 second
         asyncio.create_task(_sleep(1)),
     ]
 
     # Both tasks should complete in ~1 second if thing are working correctly
-    await asyncio.wait_for(asyncio.gather(*tasks), 1.05)
+    await asyncio.wait_for(timeout=1.05, fut=asyncio.gather(*tasks))
 
 
-def test_repr():
-    semaphore = AsyncSemaphore(name='test', capacity=1, connection=Redis.from_url('redis://127.0.0.1:6379'))
+@pytest.mark.parametrize('connection', ASYNC_CONNECTIONS)
+def test_repr(connection):
+    semaphore = AsyncSemaphore(connection=connection(), name='test', capacity=1)
     assert re.match(r'Semaphore instance for queue {limiter}:semaphore:test', str(semaphore))
 
 
+@pytest.mark.parametrize('connection', ASYNC_CONNECTIONS)
 @pytest.mark.parametrize(
-    'config,e',
+    'config,error',
     [
         ({'name': ''}, None),
         ({'name': None}, ValidationError),
@@ -73,41 +87,45 @@ def test_repr():
         ({'capacity': 2.2}, None),
         ({'capacity': None}, ValidationError),
         ({'capacity': 'test'}, ValidationError),
-        ({'connection': 'test'}, ValidationError),
-        ({'connection': None}, ValidationError),
         ({'max_sleep': 20}, None),
         ({'max_sleep': 0}, None),
         ({'max_sleep': 'test'}, ValidationError),
         ({'max_sleep': None}, ValidationError),
     ],
 )
-def test_init_types(config, e):
-    if e:
-        with pytest.raises(e):
-            async_semaphore_factory(**config)()
+def test_init_types(config, error, connection):
+    if error:
+        with pytest.raises(error):
+            async_semaphore_factory(connection=connection(), **config)
     else:
-        async_semaphore_factory(**config)()
+        async_semaphore_factory(connection=connection(), **config)
 
 
 @pytest.mark.filterwarnings('ignore::RuntimeWarning')
-async def test_max_sleep():
+@pytest.mark.parametrize('connection', ASYNC_CONNECTIONS)
+async def test_max_sleep(connection):
     name = uuid4().hex[:6]
     with pytest.raises(MaxSleepExceededError, match=r'Max sleep \(1\.0s\) exceeded waiting for Semaphore'):
         await asyncio.gather(
-            *[asyncio.create_task(run(async_semaphore_factory(name=name, max_sleep=1), 1)) for _ in range(3)]
+            *[
+                asyncio.create_task(run(async_semaphore_factory(connection=connection(), name=name, max_sleep=1), 1))
+                for _ in range(3)
+            ]
         )
 
 
+@pytest.mark.parametrize('connection', [STANDALONE_ASYNC_CONNECTION])
 async def test_redis_instructions(connection):
+    connection: Redis = connection()
     name = uuid4().hex
 
     # Run once to warm up - otherwise tests get flaky
-    await run(async_semaphore_factory(name=name, expiry=1), 0)
+    await run(async_semaphore_factory(connection=connection, name=name, expiry=1), 0)
 
     m: Monitor
     async with connection.monitor() as m:
         await m.connect()
-        await run(async_semaphore_factory(name=name, expiry=1), 0)
+        await run(async_semaphore_factory(connection=connection, name=name, expiry=1), 0)
 
         # We expect the eval to generate 7 calls
         commands = [

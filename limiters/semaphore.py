@@ -1,26 +1,23 @@
 import logging
 from datetime import datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar
 
-from pydantic import Field
-from redis import Redis as SyncRedis
-from redis.asyncio import Redis as AsyncRedis
-from redis.commands.core import AsyncScript, Script
+from pydantic import BaseModel, Field
+from redis.asyncio.client import Pipeline
+from redis.asyncio.cluster import ClusterPipeline
 
 from limiters import MaxSleepExceededError
-from limiters.base import LuaScriptBase
+from limiters.base import AsyncLuaScriptBase, SyncLuaScriptBase
 
 logger = logging.getLogger(__name__)
 
 
-class SemaphoreBase(LuaScriptBase):
+class SemaphoreBase(BaseModel):
     name: str
     capacity: int = Field(gt=0)
     max_sleep: float = Field(ge=0, default=0.0)
     expiry: int | None = None
-
-    script_name: ClassVar[str] = 'semaphore.lua'
 
     @property
     def key(self) -> str:
@@ -36,10 +33,8 @@ class SemaphoreBase(LuaScriptBase):
         return f'Semaphore instance for queue {self.key}'
 
 
-class SyncSemaphore(SemaphoreBase):
-    if TYPE_CHECKING:
-        connection: SyncRedis[str]
-        script: Script
+class SyncSemaphore(SemaphoreBase, SyncLuaScriptBase):
+    script_name: ClassVar[str] = 'semaphore.lua'
 
     def __enter__(self) -> None:
         """
@@ -85,10 +80,8 @@ class SyncSemaphore(SemaphoreBase):
         logger.debug('Released semaphore')
 
 
-class AsyncSemaphore(SemaphoreBase):
-    if TYPE_CHECKING:
-        connection: AsyncRedis[str]
-        script: AsyncScript
+class AsyncSemaphore(SemaphoreBase, AsyncLuaScriptBase):
+    script_name: ClassVar[str] = 'semaphore.lua'
 
     async def __aenter__(self) -> None:
         """
@@ -105,7 +98,7 @@ class AsyncSemaphore(SemaphoreBase):
             logger.debug('Skipped creating semaphore, since one exists')
 
         start = datetime.now()
-        await self.connection.blpop(self.key, self.max_sleep)
+        await self.connection.blpop(self.key, self.max_sleep)  # type: ignore[union-attr]
 
         # Raise an exception if we waited too long
         if 0.0 < self.max_sleep < (datetime.now() - start).total_seconds():
@@ -120,14 +113,14 @@ class AsyncSemaphore(SemaphoreBase):
         exc_tb: TracebackType | None,
     ) -> None:
         if self.expiry:
-            pipeline = self.connection.pipeline()
+            pipeline: Pipeline[str] | ClusterPipeline[str] = self.connection.pipeline()
             # Return capacity to the semaphore
-            pipeline.lpush(self.key, 1)
+            pipeline.lpush(self.key, 1)  # type: ignore[union-attr]
             # Set expiry to prevent deadlocks
-            pipeline.expire(self.key, self.expiry)
-            pipeline.expire(self.exists, self.expiry)
+            pipeline.expire(self.key, self.expiry)  # type: ignore[union-attr]
+            pipeline.expire(self.exists, self.expiry)  # type: ignore[union-attr]
             await pipeline.execute()
         else:
-            await self.connection.lpush(self.key, 1)
+            await self.connection.lpush(self.key, 1)  # type: ignore[union-attr]
 
         logger.debug('Released semaphore')
