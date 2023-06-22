@@ -17,7 +17,7 @@ class SemaphoreBase(BaseModel):
     name: str
     capacity: int = Field(gt=0)
     max_sleep: float = Field(ge=0, default=0.0)
-    expiry: int | None = None
+    expiry: int = 30
 
     @property
     def key(self) -> str:
