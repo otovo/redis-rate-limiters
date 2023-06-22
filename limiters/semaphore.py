@@ -52,7 +52,12 @@ class SyncSemaphore(SemaphoreBase, SyncLuaScriptBase):
             logger.debug('Skipped creating semaphore, since one exists')
 
         start = datetime.now()
+
         self.connection.blpop(self.key, self.max_sleep)
+        pipeline = self.connection.pipeline()
+        pipeline.expire(self.key, self.expiry)
+        pipeline.expire(self.exists, self.expiry)
+        pipeline.execute()
 
         # Raise an exception if we exceeded `max_sleep`
         if 0.0 < self.max_sleep < (datetime.now() - start).total_seconds():
@@ -66,18 +71,13 @@ class SyncSemaphore(SemaphoreBase, SyncLuaScriptBase):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        if self.expiry:
-            pipeline = self.connection.pipeline()
-            # Return capacity to the semaphore
-            pipeline.lpush(self.key, 1)
-            # Set expiry to prevent deadlocks
-            pipeline.expire(self.key, self.expiry)
-            pipeline.expire(self.exists, self.expiry)
-            pipeline.execute()
-        else:
-            self.connection.lpush(self.key, 1)
+        pipeline = self.connection.pipeline()
+        pipeline.lpush(self.key, 1)
+        pipeline.expire(self.key, self.expiry)
+        pipeline.expire(self.exists, self.expiry)
+        pipeline.execute()
 
-        logger.debug('Released semaphore')
+        logger.debug('Released semaphore %s', self.name)
 
 
 class AsyncSemaphore(SemaphoreBase, AsyncLuaScriptBase):
@@ -98,7 +98,12 @@ class AsyncSemaphore(SemaphoreBase, AsyncLuaScriptBase):
             logger.debug('Skipped creating semaphore, since one exists')
 
         start = datetime.now()
+
         await self.connection.blpop(self.key, self.max_sleep)  # type: ignore[union-attr]
+        pipeline: Pipeline[str] | ClusterPipeline[str] = self.connection.pipeline()
+        pipeline.expire(self.key, self.expiry)  # type: ignore[union-attr]
+        pipeline.expire(self.exists, self.expiry)  # type: ignore[union-attr]
+        await pipeline.execute()
 
         # Raise an exception if we waited too long
         if 0.0 < self.max_sleep < (datetime.now() - start).total_seconds():
@@ -112,15 +117,10 @@ class AsyncSemaphore(SemaphoreBase, AsyncLuaScriptBase):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        if self.expiry:
-            pipeline: Pipeline[str] | ClusterPipeline[str] = self.connection.pipeline()
-            # Return capacity to the semaphore
-            pipeline.lpush(self.key, 1)  # type: ignore[union-attr]
-            # Set expiry to prevent deadlocks
-            pipeline.expire(self.key, self.expiry)  # type: ignore[union-attr]
-            pipeline.expire(self.exists, self.expiry)  # type: ignore[union-attr]
-            await pipeline.execute()
-        else:
-            await self.connection.lpush(self.key, 1)  # type: ignore[union-attr]
+        pipeline: Pipeline[str] | ClusterPipeline[str] = self.connection.pipeline()
+        pipeline.lpush(self.key, 1)  # type: ignore[union-attr]
+        pipeline.expire(self.key, self.expiry)  # type: ignore[union-attr]
+        pipeline.expire(self.exists, self.expiry)  # type: ignore[union-attr]
+        await pipeline.execute()
 
-        logger.debug('Released semaphore')
+        logger.debug('Released semaphore %s', self.name)
