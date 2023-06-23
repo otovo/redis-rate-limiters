@@ -38,10 +38,10 @@ class TokenBucketBase(BaseModel):
         if self.max_sleep != 0.0 and sleep_time > self.max_sleep:
             raise MaxSleepExceededError(
                 f'Scheduled to sleep `{sleep_time}` seconds. '
-                f'This exceeds the maximum accepted sleep time of `{self.max_sleep}` seconds.'
+                f'This exceeds the maximum accepted sleep time of `{self.max_sleep}` seconds for {self.name}.'
             )
 
-        logger.info('Sleeping %s seconds', sleep_time)
+        logger.info('Sleeping %s seconds (%s)', sleep_time, self.name)
         return sleep_time
 
     @property
