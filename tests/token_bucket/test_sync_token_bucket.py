@@ -17,7 +17,7 @@ async def test_sync_token_bucket(connection):
         with sync_tokenbucket_factory(
             connection=connection(), name=f'{uuid4()}', refill_amount=2, refill_frequency=0.2
         ):
-            ...
+            pass
 
     # This has the potential of being flaky if CI is extremely slow
     assert timedelta(seconds=0) < datetime.now() - start < timedelta(seconds=1)
