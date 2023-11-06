@@ -32,7 +32,7 @@ local now = tonumber(redis_time[1]) * 1000 + (tonumber(redis_time[2]) / 1000)
 -- These are only used if a bucket doesn't already exist
 local tokens = capacity
 
-local slot = now + time_between_slots  -- next available slot == now + time_between_slots seconds
+local slot = now
 
 -- Retrieve (possibly) stored state
 local data = redis.call('GET', data_key)
