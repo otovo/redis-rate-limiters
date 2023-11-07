@@ -129,6 +129,9 @@ async def test_redis_instructions(connection):
 
         # We expect the eval to generate these exact calls
         commands = [
+            # CLIENT SETINFO x2
+            str(await m.connection.read_response()),
+            str(await m.connection.read_response()),
             # EVALSHA
             str(await m.connection.read_response()),
             # SETNX
@@ -160,7 +163,9 @@ async def test_redis_instructions(connection):
             print(await asyncio.wait_for(timeout=1, fut=m.connection.read_response()))  # noqa
 
         # Make sure each command conforms to our expectations
-
+        assert 'CLIENT' in commands[0], f'was {commands[0]}'
+        assert 'CLIENT' in commands[0], f'was {commands[0]}'
+        commands = commands[2:]
         assert 'EVALSHA' in commands[0], f'was {commands[0]}'
         assert 'SETNX' in commands[1], f'was {commands[1]}'
         assert f'{{limiter}}:semaphore:{name}-exists' in commands[1], f'was {commands[1]}'
