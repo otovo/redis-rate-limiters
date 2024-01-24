@@ -106,12 +106,10 @@ def test_init_types(config, error, connection):
 async def test_max_sleep(connection):
     name = uuid4().hex[:6]
     with pytest.raises(MaxSleepExceededError, match=r'Max sleep \(1\.0s\) exceeded waiting for Semaphore'):
-        await asyncio.gather(
-            *[
-                asyncio.create_task(run(async_semaphore_factory(connection=connection(), name=name, max_sleep=1), 1))
-                for _ in range(3)
-            ]
-        )
+        await asyncio.gather(*[
+            asyncio.create_task(run(async_semaphore_factory(connection=connection(), name=name, max_sleep=1), 1))
+            for _ in range(3)
+        ])
 
 
 @pytest.mark.parametrize('connection', [STANDALONE_ASYNC_CONNECTION])

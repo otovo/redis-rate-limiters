@@ -55,7 +55,7 @@ class TokenBucketBase(BaseModel):
 class SyncTokenBucket(TokenBucketBase, SyncLuaScriptBase):
     script_name: ClassVar[str] = 'token_bucket.lua'
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> float:
         """
         Call the token bucket Lua script, receive a datetime for
         when to wake up, then sleep up until that point in time.
@@ -71,6 +71,8 @@ class SyncTokenBucket(TokenBucketBase, SyncLuaScriptBase):
 
         # Sleep before returning
         time.sleep(sleep_time)
+
+        return sleep_time
 
     def __exit__(
         self,
