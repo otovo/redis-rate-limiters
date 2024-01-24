@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "redis-rate-limiters"
-version = "0.4.0"
+version = "0.4.3"
 description = "Distributed rate limiters"
 license = "BSD-4-Clause"
 authors = ["Sondre Lillebø Gundersen <sondrelg@live.no>"]
