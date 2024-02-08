@@ -13,6 +13,19 @@ from limiters.base import AsyncLuaScriptBase, SyncLuaScriptBase
 logger = logging.getLogger(__name__)
 
 
+def create_redis_time_tuple() -> tuple[int, int]:
+    """
+    Create a tuple of two integers representing the current time in seconds and microseconds.
+
+    This mimmicks the TIME command in Redis, which returns the current time in seconds and microseconds.
+    See: https://redis.io/commands/time/
+    """
+    now = time.time()
+    seconds_part = int(now)
+    microseconds_part = int((now - seconds_part) * 1_000_000)
+    return seconds_part, microseconds_part
+
+
 class TokenBucketBase(BaseModel):
     name: str
     capacity: int = Field(gt=0)
@@ -60,10 +73,12 @@ class SyncTokenBucket(TokenBucketBase, SyncLuaScriptBase):
         Call the token bucket Lua script, receive a datetime for
         when to wake up, then sleep up until that point in time.
         """
+
         # Retrieve timestamp for when to wake up from Redis
+        seconds, microseconds = create_redis_time_tuple()
         timestamp: int = self.script(
             keys=[self.key],
-            args=[self.capacity, self.refill_amount, self.refill_frequency],
+            args=[self.capacity, self.refill_amount, self.refill_frequency, seconds, microseconds],
         )
 
         # Estimate sleep time
@@ -91,10 +106,12 @@ class AsyncTokenBucket(TokenBucketBase, AsyncLuaScriptBase):
         Call the token bucket Lua script, receive a datetime for
         when to wake up, then sleep up until that point in time.
         """
+
         # Retrieve timestamp for when to wake up from Redis
+        seconds, microseconds = create_redis_time_tuple()
         timestamp = await self.script(
             keys=[self.key],
-            args=[self.capacity, self.refill_amount, self.refill_frequency],
+            args=[self.capacity, self.refill_amount, self.refill_frequency, seconds, microseconds],
         )
 
         # Estimate sleep time
