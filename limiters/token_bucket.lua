@@ -20,13 +20,14 @@ redis.replicate_commands()
 local capacity = tonumber(ARGV[1])
 local refill_amount = tonumber(ARGV[2])
 local time_between_slots = tonumber(ARGV[3]) * 1000 -- ms
+local seconds = tonumber(ARGV[4])
+local microseconds = tonumber(ARGV[5])
 
 -- Keys
 local data_key = KEYS[1]
 
 -- Get current time (ms timestamp)
-local redis_time = redis.call('TIME') -- Array of [seconds, microseconds]
-local now = tonumber(redis_time[1]) * 1000 + (tonumber(redis_time[2]) / 1000)
+local now = tonumber(seconds) * 1000 + (tonumber(microseconds) / 1000)
 
 -- Instantiate default bucket values
 -- These are only used if a bucket doesn't already exist
