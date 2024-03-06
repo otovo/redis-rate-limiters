@@ -40,7 +40,7 @@ redis = ">4.2"
 
 [tool.poetry.group.development.dependencies]
 pre-commit = "^3"
-black = "^23"
+black = "^24"
 isort = "^5"
 printf-log-formatter = "^0.3.0"
 coverage = "^7"
