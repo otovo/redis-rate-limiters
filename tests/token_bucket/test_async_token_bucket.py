@@ -38,7 +38,7 @@ async def test_token_bucket_runtimes(connection, n, frequency, timeout):
                 sleep_duration=0,
             )
         )
-        for _ in range(n)
+        for _ in range(n + 1)  # one added to account for initial capacity of 1
     ]
 
     before = datetime.now()

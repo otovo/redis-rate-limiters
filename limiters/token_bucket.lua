@@ -19,54 +19,48 @@ redis.replicate_commands()
 -- Arguments
 local capacity = tonumber(ARGV[1])
 local refill_amount = tonumber(ARGV[2])
-local time_between_slots = tonumber(ARGV[3]) * 1000 -- ms
+local time_between_slots = tonumber(ARGV[3]) * 1000 -- Convert to milliseconds
 local seconds = tonumber(ARGV[4])
 local microseconds = tonumber(ARGV[5])
 
 -- Keys
 local data_key = KEYS[1]
 
--- Get current time (ms timestamp)
-local now = tonumber(seconds) * 1000 + (tonumber(microseconds) / 1000)
+-- Get current time in milliseconds
+local now = (tonumber(seconds) * 1000) + (tonumber(microseconds) / 1000)
 
--- Instantiate default bucket values
--- These are only used if a bucket doesn't already exist
+-- Default bucket values (used if no bucket exists yet)
 local tokens = capacity
-
 local slot = now
 
--- Retrieve (possibly) stored state
+-- Retrieve stored state, if any
 local data = redis.call('GET', data_key)
+if data then
+    local last_slot, stored_tokens = data:match('(%S+) (%S+)')
+    slot = tonumber(last_slot)
+    tokens = tonumber(stored_tokens)
 
-if data ~= false then
-    for a, b in string.gmatch(data, '(%S+) (%S+)') do
-        slot = tonumber(a)
-        tokens = tonumber(b)
+    -- Calculate the number of slots that have passed since the last update
+    local slots_passed = math.floor((now - slot) / time_between_slots)
+    if slots_passed > 0 then
+        -- Refill the tokens based on the number of slots passed, capped by capacity
+        tokens = math.min(tokens + slots_passed * refill_amount, capacity)
+        -- Update the slot to this run, adding a penalty for execution time
+        slot = now + 20
     end
+end
 
-    -- Add tokens if we have gone past the last scheduled slot
-    if slot < now + 20 then  -- +20 to account for execution time
-        local slots_passed = math.floor((now - slot) / time_between_slots)
-        tokens = tokens + slots_passed * refill_amount
-        slot = now + time_between_slots
-
-        -- Make sure token count never exceeds capacity
-        if tokens > capacity then
-            tokens = capacity
-        end
-    end
-
-    -- If the current slot has no more tokens to assign, move to the next slot.
-    if tokens <= 0 then
-        slot = slot + time_between_slots
-        tokens = refill_amount
-    end
+-- If no tokens are left, move to the next slot and refill accordingly
+if tokens <= 0 then
+    slot = slot + time_between_slots
+    tokens = refill_amount
 end
 
 -- Consume a token
 tokens = tokens - 1
 
--- Save state and set expiry
+-- Save updated state and set expiry
 redis.call('SETEX', data_key, 30, string.format('%d %d', slot, tokens))
 
+-- Return the slot when the next token will be available
 return slot
