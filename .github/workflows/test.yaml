@@ -32,16 +32,18 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [ "3.11.x" ]
+        pydantic-version: [ "1.10.15", "2.7.1" ]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: "${{ matrix.python-version }}"
+          pydantic-version: "${{ matrix.pydantic-version }}"
       - uses: actions/cache@v3
         id: poetry-cache
         with:
           path: ~/.local
-          key: ${{ matrix.python-version }}-0
+          key: ${{ matrix.python-version }}{{ matrix.pydantic-version }}-0
       - uses: snok/install-poetry@v1
         with:
           virtualenvs-create: false
@@ -57,6 +59,9 @@ jobs:
           pip install -U pip
           poetry install --no-interaction --no-root --with=development
         if: steps.cache-venv.outputs.cache-hit != 'true'
+      - run: |
+          source .venv/bin/activate
+          pip install pydantic=={{ pydantic-version }}
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:

@@ -3,7 +3,10 @@ from datetime import datetime
 from types import TracebackType
 from typing import ClassVar
 
-from pydantic import BaseModel, Field
+if pydantic.VERSION.startswith('1.'):
+    from pydantic import BaseModel, Field
+else:
+    from pydantic.v1 import BaseModel, Field
 from redis.asyncio.client import Pipeline
 from redis.asyncio.cluster import ClusterPipeline
 
