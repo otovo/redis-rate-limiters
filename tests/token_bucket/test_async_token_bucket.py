@@ -90,7 +90,7 @@ def test_repr(connection):
         ({'name': 1}, None),
         ({'name': True}, None),
         ({'capacity': 2}, None),
-        ({'capacity': 2.2}, None),
+        ({'capacity': 2.2}, ValidationError),
         ({'capacity': -1}, ValidationError),
         ({'capacity': None}, ValidationError),
         ({'capacity': 'test'}, ValidationError),

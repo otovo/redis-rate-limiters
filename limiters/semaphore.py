@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class SemaphoreBase(BaseModel):
-    name: str
+    name: str | bool | int
     capacity: int = Field(gt=0)
     max_sleep: float = Field(ge=0, default=0.0)
     expiry: int = 30

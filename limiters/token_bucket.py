@@ -27,7 +27,7 @@ def create_redis_time_tuple() -> tuple[int, int]:
 
 
 class TokenBucketBase(BaseModel):
-    name: str
+    name: str | bool | int
     capacity: int = Field(gt=0)
     refill_frequency: float = Field(gt=0)
     refill_amount: int = Field(gt=0)
