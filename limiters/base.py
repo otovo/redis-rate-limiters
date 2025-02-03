@@ -1,7 +1,11 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from pydantic import BaseModel
+import pydantic
+if pydantic.VERSION.startswith('1.'):
+    from pydantic import BaseModel
+else:
+    from pydantic.v1 import BaseModel
 from redis import Redis as SyncRedis
 from redis.asyncio import Redis as AsyncRedis
 from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster

@@ -5,7 +5,11 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
-from pydantic import ValidationError
+import pydantic
+if pydantic.VERSION.startswith('1.'):
+    from pydantic import BaseModel
+else:
+    from pydantic.v1 import BaseModel
 
 from limiters import AsyncTokenBucket, MaxSleepExceededError
 from tests.conftest import (
