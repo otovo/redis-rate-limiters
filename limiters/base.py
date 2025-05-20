@@ -1,7 +1,7 @@
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from pydantic import BaseModel
 from redis import Redis as SyncRedis
 from redis.asyncio import Redis as AsyncRedis
 from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster
@@ -9,7 +9,8 @@ from redis.cluster import RedisCluster as SyncRedisCluster
 from redis.commands.core import AsyncScript, Script
 
 
-class SyncLuaScriptBase(BaseModel):
+@dataclass
+class SyncLuaScriptBase:
     if TYPE_CHECKING:
         connection: SyncRedis[str] | SyncRedisCluster[str]
     else:
@@ -18,18 +19,14 @@ class SyncLuaScriptBase(BaseModel):
     script_name: ClassVar[str]
     script: Script = None  # type: ignore[assignment]
 
-    class Config:
-        arbitrary_types_allowed = True
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-
+    def __post_init__(self) -> None:
         # Load script on initialization
         with open(Path(__file__).parent / self.script_name) as f:
             self.script = self.connection.register_script(f.read())  # type: ignore[union-attr]
 
 
-class AsyncLuaScriptBase(BaseModel):
+@dataclass
+class AsyncLuaScriptBase:
     if TYPE_CHECKING:
         connection: AsyncRedis[str] | AsyncRedisCluster[str]
     else:
@@ -38,12 +35,7 @@ class AsyncLuaScriptBase(BaseModel):
     script_name: ClassVar[str]
     script: AsyncScript = None  # type: ignore[assignment]
 
-    class Config:
-        arbitrary_types_allowed = True
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-
+    def __post_init__(self) -> None:
         # Load script on initialization
         with open(Path(__file__).parent / self.script_name) as f:
             self.script = self.connection.register_script(f.read())  # type: ignore[union-attr]
