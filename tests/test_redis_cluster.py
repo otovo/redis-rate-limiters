@@ -28,12 +28,15 @@ def test_redis_cluster(klass, port, limiters):
         connection.get('INFO')
 
     for limiter in limiters:
-        limiter(
-            name='test',
-            capacity=99,
-            max_sleep=99,
-            expiry=99,
-            refill_frequency=99,
-            refill_amount=99,
-            connection=connection,
-        )
+        kwargs = {
+            'name': 'test',
+            'capacity': 99,
+            'max_sleep': 99,
+            'connection': connection,
+        }
+        if limiter in (SyncSemaphore, AsyncSemaphore):
+            kwargs['expiry'] = 99
+        else:
+            kwargs['refill_frequency'] = 99
+            kwargs['refill_amount'] = 99
+        limiter(**kwargs)

@@ -5,7 +5,6 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
-from pydantic import ValidationError
 
 from limiters import AsyncTokenBucket, MaxSleepExceededError
 from tests.conftest import (
@@ -89,26 +88,26 @@ def test_repr(connection):
     'config,error',
     [
         ({'name': ''}, None),
-        ({'name': None}, ValidationError),
+        ({'name': None}, ValueError),
         ({'name': 1}, None),
         ({'name': True}, None),
         ({'capacity': 2}, None),
         ({'capacity': 2.2}, None),
-        ({'capacity': -1}, ValidationError),
-        ({'capacity': None}, ValidationError),
-        ({'capacity': 'test'}, ValidationError),
+        ({'capacity': -1}, ValueError),
+        ({'capacity': None}, ValueError),
+        ({'capacity': 'test'}, ValueError),
         ({'refill_frequency': 2.2}, None),
-        ({'refill_frequency': 'test'}, ValidationError),
-        ({'refill_frequency': None}, ValidationError),
+        ({'refill_frequency': 'test'}, ValueError),
+        ({'refill_frequency': None}, ValueError),
         ({'refill_frequency': -1}, ValueError),
         ({'refill_amount': 1}, None),
-        ({'refill_amount': -1}, ValidationError),
-        ({'refill_amount': 'test'}, ValidationError),
-        ({'refill_amount': None}, ValidationError),
+        ({'refill_amount': -1}, ValueError),
+        ({'refill_amount': 'test'}, ValueError),
+        ({'refill_amount': None}, ValueError),
         ({'max_sleep': 20}, None),
         ({'max_sleep': 0}, None),
-        ({'max_sleep': 'test'}, ValidationError),
-        ({'max_sleep': None}, ValidationError),
+        ({'max_sleep': 'test'}, ValueError),
+        ({'max_sleep': None}, ValueError),
     ],
 )
 def test_init_types(connection, config, error):

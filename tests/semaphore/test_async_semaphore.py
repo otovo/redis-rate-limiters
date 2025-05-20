@@ -5,7 +5,6 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
-from pydantic import ValidationError
 from redis.asyncio.client import Monitor, Redis
 
 from limiters import AsyncSemaphore, MaxSleepExceededError
@@ -83,17 +82,17 @@ def test_repr(connection):
     'config,error',
     [
         ({'name': ''}, None),
-        ({'name': None}, ValidationError),
+        ({'name': None}, ValueError),
         ({'name': 1}, None),
         ({'name': True}, None),
         ({'capacity': 2}, None),
         ({'capacity': 2.2}, None),
-        ({'capacity': None}, ValidationError),
-        ({'capacity': 'test'}, ValidationError),
+        ({'capacity': None}, ValueError),
+        ({'capacity': 'test'}, ValueError),
         ({'max_sleep': 20}, None),
         ({'max_sleep': 0}, None),
-        ({'max_sleep': 'test'}, ValidationError),
-        ({'max_sleep': None}, ValidationError),
+        ({'max_sleep': 'test'}, ValueError),
+        ({'max_sleep': None}, ValueError),
     ],
 )
 def test_init_types(config, error, connection):
