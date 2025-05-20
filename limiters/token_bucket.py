@@ -1,11 +1,10 @@
 import asyncio
 import logging
 import time
+from dataclasses import dataclass
 from datetime import datetime
 from types import TracebackType
 from typing import ClassVar
-
-from pydantic import BaseModel, Field
 
 from limiters import MaxSleepExceededError
 from limiters.base import AsyncLuaScriptBase, SyncLuaScriptBase
@@ -26,12 +25,23 @@ def create_redis_time_tuple() -> tuple[int, int]:
     return seconds_part, microseconds_part
 
 
-class TokenBucketBase(BaseModel):
+@dataclass
+class TokenBucketBase:
     name: str
-    capacity: int = Field(gt=0)
-    refill_frequency: float = Field(gt=0)
-    refill_amount: int = Field(gt=0)
-    max_sleep: float = Field(ge=0, default=0.0)
+    capacity: int
+    refill_frequency: float
+    refill_amount: int
+    max_sleep: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.capacity <= 0:
+            raise ValueError('capacity must be > 0')
+        if self.refill_frequency <= 0:
+            raise ValueError('refill_frequency must be > 0')
+        if self.refill_amount <= 0:
+            raise ValueError('refill_amount must be > 0')
+        if self.max_sleep < 0:
+            raise ValueError('max_sleep must be >= 0')
 
     def parse_timestamp(self, timestamp: int) -> float:
         # Parse to datetime

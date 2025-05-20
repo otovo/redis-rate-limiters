@@ -1,9 +1,9 @@
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from types import TracebackType
 from typing import ClassVar
 
-from pydantic import BaseModel, Field
 from redis.asyncio.client import Pipeline
 from redis.asyncio.cluster import ClusterPipeline
 
@@ -13,11 +13,18 @@ from limiters.base import AsyncLuaScriptBase, SyncLuaScriptBase
 logger = logging.getLogger(__name__)
 
 
-class SemaphoreBase(BaseModel):
+@dataclass
+class SemaphoreBase:
     name: str
-    capacity: int = Field(gt=0)
-    max_sleep: float = Field(ge=0, default=0.0)
+    capacity: int
+    max_sleep: float = 0.0
     expiry: int = 30
+
+    def __post_init__(self) -> None:
+        if self.capacity <= 0:
+            raise ValueError('capacity must be > 0')
+        if self.max_sleep < 0:
+            raise ValueError('max_sleep must be >= 0')
 
     @property
     def key(self) -> str:
@@ -124,3 +131,21 @@ class AsyncSemaphore(SemaphoreBase, AsyncLuaScriptBase):
         await pipeline.execute()
 
         logger.debug('Released semaphore %s', self.name)
+
+
+def _run(name, sleep, connection) -> None:  # type: ignore[no-untyped-def]
+    """
+    Background task that periodically logs the number of active semaphores.
+    """
+    from time import sleep as time_sleep
+
+    logger.info('Starting semaphore monitor for `%s`', name)
+
+    while True:
+        try:
+            active_count = connection.llen(f'{{limiter}}:semaphore:{name}')
+            logger.info('Semaphore `%s` has %d active leases', name, active_count)
+        except Exception:  # pylint: disable=broad-except
+            logger.exception('Error while monitoring semaphore `%s`', name)
+
+        time_sleep(sleep)
