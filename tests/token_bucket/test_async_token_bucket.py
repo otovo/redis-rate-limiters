@@ -43,7 +43,8 @@ async def test_token_bucket_runtimes(connection, n, frequency, timeout):
 
     before = datetime.now()
     await asyncio.gather(*tasks)
-    assert timeout <= delta_to_seconds(datetime.now() - before)
+    elapsed = delta_to_seconds(datetime.now() - before)
+    assert abs(timeout - elapsed) <= 0.01
 
 
 @pytest.mark.parametrize('connection', [STANDALONE_ASYNC_CONNECTION])

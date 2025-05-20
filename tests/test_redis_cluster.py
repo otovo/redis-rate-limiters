@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from redis.asyncio import Redis as AsyncRedis
 from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster
@@ -18,7 +20,12 @@ from limiters import AsyncSemaphore, AsyncTokenBucket, SyncSemaphore, SyncTokenB
 )
 def test_redis_cluster(klass, port, limiters):
     connection = klass.from_url(f'redis://127.0.0.1:{port}')
-    connection.get('INFO')
+    if hasattr(connection, '__aenter__'):
+        # Async connection
+        asyncio.get_event_loop().run_until_complete(connection.get('INFO'))
+    else:
+        # Sync connection
+        connection.get('INFO')
 
     for limiter in limiters:
         limiter(
