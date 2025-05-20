@@ -13,12 +13,12 @@ jobs:
   linting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.6.0
         with:
           python-version: "${{ env.PYTHON_VERSION }}"
       - run: pip install pre-commit
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4.2.3
         id: pre-commit-cache
         with:
           path: ~/.cache/pre-commit
@@ -31,22 +31,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.11.x" ]
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.6.0
         with:
           python-version: "${{ matrix.python-version }}"
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4.2.3
         id: poetry-cache
         with:
           path: ~/.local
           key: ${{ matrix.python-version }}-0
-      - uses: snok/install-poetry@v1
+      - uses: snok/install-poetry@v1.4.1
         with:
           virtualenvs-create: false
           version: latest
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4.2.3
         id: cache-venv
         with:
           path: .venv
@@ -57,12 +57,10 @@ jobs:
           pip install -U pip
           poetry install --no-interaction --no-root --with=development
         if: steps.cache-venv.outputs.cache-hit != 'true'
-
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           packages: redis-tools
           version: 0
-
       - name: Run tests
         run: |
           docker compose up -d
