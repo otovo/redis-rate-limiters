@@ -7,9 +7,9 @@ from uuid import uuid4
 import pytest
 import pydantic
 if pydantic.VERSION.startswith('1.'):
-    from pydantic import BaseModel
+    from pydantic import BaseModel, ValidationError
 else:
-    from pydantic.v1 import BaseModel
+    from pydantic.v1 import BaseModel, ValidationError
 from redis.asyncio.client import Monitor, Redis
 
 from limiters import AsyncSemaphore, MaxSleepExceededError
