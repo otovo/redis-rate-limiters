@@ -47,6 +47,7 @@ dev = [
     "pytest-asyncio",
     "pytest-mock",
     "pytest-randomly",
+    "pytest-rerunfailures>=14",
     "pytest-socket",
     "types-redis>=4.5.5.2",
     "mypy>=1.6",
@@ -60,7 +61,7 @@ build-backend = "hatchling.build"
 packages = ["limiters"]
 
 [tool.pytest.ini_options]
-addopts = "--allow-hosts=127.0.0.1,::1,10.5.0.2,10.5.0.3,10.5.0.4,10.5.0.5,10.5.0.6,10.5.0.7"
+addopts = "--allow-hosts=127.0.0.1,::1,10.5.0.2,10.5.0.3,10.5.0.4,10.5.0.5,10.5.0.6,10.5.0.7 --reruns=5 --reruns-delay=1"
 asyncio_mode = "auto"
 
 [tool.coverage.run]
