@@ -60,7 +60,7 @@ build-backend = "hatchling.build"
 packages = ["limiters"]
 
 [tool.pytest.ini_options]
-addopts = "--allow-hosts=127.0.0.1,::1,10.5.0.2,10.5.0.3,10.5.0.4"
+addopts = "--allow-hosts=127.0.0.1,::1,10.5.0.2,10.5.0.3,10.5.0.4,10.5.0.5,10.5.0.6,10.5.0.7"
 asyncio_mode = "auto"
 
 [tool.coverage.run]

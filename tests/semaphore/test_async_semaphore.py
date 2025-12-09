@@ -38,35 +38,38 @@ async def test_semaphore_runtimes(connection, n, capacity, sleep, timeout):
     a Semaphore with a capacity of 5, where each instance sleeps 1 second, then it should
     always take 1 >= seconds to run those.
     """
-    connection = connection()
+    conn = connection()
     name = f'runtimes-{uuid4()}'
     tasks = [
         asyncio.create_task(
-            run(async_semaphore_factory(connection=connection, name=name, capacity=capacity), sleep_duration=sleep)
+            run(async_semaphore_factory(connection=conn, name=name, capacity=capacity), sleep_duration=sleep)
         )
         for _ in range(n)
     ]
     before = datetime.now()
     await asyncio.gather(*tasks)
-    assert timeout <= delta_to_seconds(datetime.now() - before)
+    elapsed = delta_to_seconds(datetime.now() - before)
+    await conn.aclose()
+    assert timeout <= elapsed
 
 
 @pytest.mark.parametrize('connection', ASYNC_CONNECTIONS)
 async def test_sleep_is_non_blocking(connection):
-    connection = connection()
+    conn = connection()
 
     async def _sleep(duration: float) -> None:
         await asyncio.sleep(duration)
 
     tasks = [
         # Create task for semaphore to sleep 1 second
-        asyncio.create_task(run(async_semaphore_factory(connection=connection), 0)),
+        asyncio.create_task(run(async_semaphore_factory(connection=conn), 0)),
         # And create another task to normal asyncio sleep for 1 second
         asyncio.create_task(_sleep(1)),
     ]
 
     # Both tasks should complete in ~1 second if thing are working correctly
     await asyncio.wait_for(timeout=1.05, fut=asyncio.gather(*tasks))
+    await conn.aclose()
 
 
 @pytest.mark.parametrize('connection', ASYNC_CONNECTIONS)
@@ -104,14 +107,18 @@ def test_init_types(config, error, connection):
 @pytest.mark.filterwarnings('ignore::RuntimeWarning')
 @pytest.mark.parametrize('connection', ASYNC_CONNECTIONS)
 async def test_max_sleep(connection):
+    conn = connection()
     name = uuid4().hex[:6]
-    with pytest.raises(MaxSleepExceededError, match=r'Max sleep \(1\.0s\) exceeded waiting for Semaphore'):
-        await asyncio.gather(
-            *[
-                asyncio.create_task(run(async_semaphore_factory(connection=connection(), name=name, max_sleep=1), 1))
-                for _ in range(3)
-            ]
-        )
+    try:
+        with pytest.raises(MaxSleepExceededError, match=r'Max sleep \(1\.0s\) exceeded waiting for Semaphore'):
+            await asyncio.gather(
+                *[
+                    asyncio.create_task(run(async_semaphore_factory(connection=conn, name=name, max_sleep=1), 1))
+                    for _ in range(3)
+                ]
+            )
+    finally:
+        await conn.aclose()
 
 
 @pytest.mark.parametrize('connection', [STANDALONE_ASYNC_CONNECTION])

@@ -23,18 +23,19 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize(
     'n, frequency, timeout',
     [
-        (10, 0.1, 1),
-        (2, 1, 2),
+        # Use longer durations so network overhead is a smaller percentage of total time
+        (30, 0.1, 3),
+        (6, 0.5, 3),
     ],
 )
 async def test_token_bucket_runtimes(connection, n, frequency, timeout):
-    connection = connection()
+    conn = connection()
     # Ensure n tasks never complete in less than n/(refill_frequency * refill_amount)
     name = f'runtimes-{uuid4()}'
     tasks = [
         asyncio.create_task(
             run(
-                async_tokenbucket_factory(connection=connection, name=name, capacity=1, refill_frequency=frequency),
+                async_tokenbucket_factory(connection=conn, name=name, capacity=1, refill_frequency=frequency),
                 sleep_duration=0,
             )
         )
@@ -44,7 +45,9 @@ async def test_token_bucket_runtimes(connection, n, frequency, timeout):
     before = datetime.now()
     await asyncio.gather(*tasks)
     elapsed = delta_to_seconds(datetime.now() - before)
-    assert abs(timeout - elapsed) <= 0.01
+    await conn.aclose()
+    # Allow 250ms tolerance to accommodate cluster network overhead
+    assert abs(timeout - elapsed) <= 0.25
 
 
 @pytest.mark.parametrize('connection', [STANDALONE_ASYNC_CONNECTION])
@@ -120,16 +123,19 @@ def test_init_types(connection, config, error):
 @pytest.mark.filterwarnings('ignore::RuntimeWarning')
 @pytest.mark.parametrize('connection', ASYNC_CONNECTIONS)
 async def test_max_sleep(connection):
-    connection = connection()
+    conn = connection()
     name = uuid4().hex[:6]
     e = (
         r'Scheduled to sleep \`[0-9].[0-9]+\` seconds. This exceeds the maximum accepted sleep time of \`1\.0\`'
         r' seconds.'
     )
-    with pytest.raises(MaxSleepExceededError, match=e):
-        await asyncio.gather(
-            *[
-                asyncio.create_task(run(async_tokenbucket_factory(connection=connection, name=name, max_sleep=1), 0))
-                for _ in range(10)
-            ]
-        )
+    try:
+        with pytest.raises(MaxSleepExceededError, match=e):
+            await asyncio.gather(
+                *[
+                    asyncio.create_task(run(async_tokenbucket_factory(connection=conn, name=name, max_sleep=1), 0))
+                    for _ in range(10)
+                ]
+            )
+    finally:
+        await conn.aclose()
