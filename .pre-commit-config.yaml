@@ -38,6 +38,5 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies:
-          - pydantic
           - types-redis
         files: 'limiters/.+'

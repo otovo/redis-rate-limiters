@@ -1,11 +1,15 @@
 import asyncio
 import logging
 import time
+from dataclasses import dataclass
 from datetime import datetime
 from types import TracebackType
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from pydantic import BaseModel, Field
+from redis import Redis as SyncRedis
+from redis.asyncio import Redis as AsyncRedis
+from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster
+from redis.cluster import RedisCluster as SyncRedisCluster
 
 from limiters import MaxSleepExceededError
 from limiters.base import AsyncLuaScriptBase, SyncLuaScriptBase
@@ -26,12 +30,36 @@ def create_redis_time_tuple() -> tuple[int, int]:
     return seconds_part, microseconds_part
 
 
-class TokenBucketBase(BaseModel):
+class TokenBucketBase:
     name: str
-    capacity: int = Field(gt=0)
-    refill_frequency: float = Field(gt=0)
-    refill_amount: int = Field(gt=0)
-    max_sleep: float = Field(ge=0, default=0.0)
+    capacity: int
+    refill_frequency: float
+    refill_amount: int
+    max_sleep: float
+
+    def _validate(self) -> None:
+        if self.name is None:
+            raise ValueError('name must not be None')
+        try:
+            if self.capacity <= 0:
+                raise ValueError('capacity must be > 0')
+        except TypeError:
+            raise ValueError('capacity must be a number') from None
+        try:
+            if self.refill_frequency <= 0:
+                raise ValueError('refill_frequency must be > 0')
+        except TypeError:
+            raise ValueError('refill_frequency must be a number') from None
+        try:
+            if self.refill_amount <= 0:
+                raise ValueError('refill_amount must be > 0')
+        except TypeError:
+            raise ValueError('refill_amount must be a number') from None
+        try:
+            if self.max_sleep < 0:
+                raise ValueError('max_sleep must be >= 0')
+        except TypeError:
+            raise ValueError('max_sleep must be a number') from None
 
     def parse_timestamp(self, timestamp: int) -> float:
         # Parse to datetime
@@ -51,7 +79,7 @@ class TokenBucketBase(BaseModel):
         if self.max_sleep != 0.0 and sleep_time > self.max_sleep:
             raise MaxSleepExceededError(
                 f'Scheduled to sleep `{sleep_time}` seconds. '
-                f'This exceeds the maximum accepted sleep time of `{self.max_sleep}` seconds for {self.name}.'
+                f'This exceeds the maximum accepted sleep time of `{float(self.max_sleep)}` seconds.'
             )
 
         logger.info('Sleeping %s seconds (%s)', sleep_time, self.name)
@@ -65,8 +93,23 @@ class TokenBucketBase(BaseModel):
         return f'Token bucket instance for queue {self.key}'
 
 
-class SyncTokenBucket(TokenBucketBase, SyncLuaScriptBase):
+@dataclass
+class SyncTokenBucket(SyncLuaScriptBase, TokenBucketBase):
+    if TYPE_CHECKING:
+        connection: SyncRedis[str] | SyncRedisCluster[str]
+    else:
+        connection: SyncRedis | SyncRedisCluster
+    name: str
+    capacity: int
+    refill_frequency: float
+    refill_amount: int
+    max_sleep: float = 0.0
+
     script_name: ClassVar[str] = 'token_bucket.lua'
+
+    def __post_init__(self) -> None:
+        self._validate()
+        self._register_script()
 
     def __enter__(self) -> float:
         """
@@ -98,8 +141,23 @@ class SyncTokenBucket(TokenBucketBase, SyncLuaScriptBase):
         return
 
 
-class AsyncTokenBucket(TokenBucketBase, AsyncLuaScriptBase):
+@dataclass
+class AsyncTokenBucket(AsyncLuaScriptBase, TokenBucketBase):
+    if TYPE_CHECKING:
+        connection: AsyncRedis[str] | AsyncRedisCluster[str]
+    else:
+        connection: AsyncRedis | AsyncRedisCluster
+    name: str
+    capacity: int
+    refill_frequency: float
+    refill_amount: int
+    max_sleep: float = 0.0
+
     script_name: ClassVar[str] = 'token_bucket.lua'
+
+    def __post_init__(self) -> None:
+        self._validate()
+        self._register_script()
 
     async def __aenter__(self) -> None:
         """

@@ -29,7 +29,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "pydantic<2",
     "redis>=5.0",
 ]
 
@@ -105,7 +104,3 @@ warn_unused_ignores = true
 warn_unused_configs = true
 warn_no_return = false
 show_traceback = true
-plugins = ["pydantic.mypy"]
-
-[tool."pydantic-mypy"]
-warn_untyped_fields = true
