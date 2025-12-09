@@ -7,10 +7,11 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write
     steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: actions/setup-python@v5.6.0
-        with:
-          python-version: "3.11"
-      - uses: snok/install-poetry@v1.4.1
-      - run: poetry publish --build --no-interaction --username __token__ --password ${{ secrets.PYPI_TOKEN }}
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv build
+      - uses: pypa/gh-action-pypi-publish@release/v1

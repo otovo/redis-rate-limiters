@@ -6,26 +6,25 @@ repos:
         name: printf-log-formatter
         entry: printf-log-formatter
         language: system
-        types: [ python ]
+        types: [python]
         args:
           - --log-level=debug
 
-      - id: isort
-        name: isort
-        entry: isort
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
         language: system
         types: [python]
 
-      - id: black
-        name: black
-        entry: black
+      - id: ruff-lint
+        name: ruff lint
+        entry: ruff check --fix --exit-non-zero-on-fix
         language: system
         types: [python]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
-      - id: double-quote-string-fixer
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-merge-conflict
@@ -34,31 +33,8 @@ repos:
       - id: mixed-line-ending
       - id: check-added-large-files
 
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
-    hooks:
-      - id: pyupgrade
-        types: [ python ]
-        args: [ "--py3-plus", "--py36-plus", "--py37-plus", "--py38-plus", "--py39-plus", "--py310-plus"]
-
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.1.4
-    hooks:
-      - id: ruff
-        args: [ --fix, --exit-non-zero-on-fix ]
-
-  - repo: https://github.com/python-poetry/poetry
-    rev: 1.7.0
-    hooks:
-      - id: poetry-check
-
-  - repo: https://github.com/python-poetry/poetry
-    rev: 1.7.0
-    hooks:
-      - id: poetry-check
-
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.6.1
+    rev: v1.13.0
     hooks:
       - id: mypy
         additional_dependencies:
