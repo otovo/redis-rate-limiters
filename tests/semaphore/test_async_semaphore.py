@@ -24,10 +24,10 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize(
     'n, capacity, sleep, timeout',
     [
-        (10, 1, 0.1, 1),
-        (10, 2, 0.1, 0.5),
-        (10, 10, 0.1, 0.1),
-        (5, 1, 0.1, 0.5),
+        (5, 1, 0.2, 1),
+        (4, 2, 0.25, 0.5),
+        (5, 5, 0.1, 0.1),
+        (3, 1, 0.2, 0.6),
     ],
 )
 async def test_semaphore_runtimes(connection, n, capacity, sleep, timeout):

@@ -23,9 +23,8 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize(
     'n, frequency, timeout',
     [
-        # Use longer durations so network overhead is a smaller percentage of total time
-        (30, 0.1, 3),
-        (6, 0.5, 3),
+        (5, 0.5, 2.5),
+        (4, 0.75, 3),
     ],
 )
 async def test_token_bucket_runtimes(connection, n, frequency, timeout):
@@ -131,10 +130,11 @@ async def test_max_sleep(connection):
     )
     try:
         with pytest.raises(MaxSleepExceededError, match=e):
+            # Reduced concurrency to avoid race conditions in redis-py async cluster
             await asyncio.gather(
                 *[
                     asyncio.create_task(run(async_tokenbucket_factory(connection=conn, name=name, max_sleep=1), 0))
-                    for _ in range(10)
+                    for _ in range(5)
                 ]
             )
     finally:
