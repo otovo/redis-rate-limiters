@@ -683,7 +683,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "pydantic", specifier = "<2" },
-    { name = "redis", specifier = ">4.2" },
+    { name = "redis", specifier = ">=5.0" },
 ]
 
 [package.metadata.requires-dev]

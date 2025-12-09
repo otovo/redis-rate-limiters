@@ -30,7 +30,7 @@ classifiers = [
 ]
 dependencies = [
     "pydantic<2",
-    "redis>4.2",
+    "redis>=5.0",
 ]
 
 [project.urls]
