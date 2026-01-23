@@ -1,11 +1,15 @@
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from types import TracebackType
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from pydantic import BaseModel, Field
+from redis import Redis as SyncRedis
+from redis.asyncio import Redis as AsyncRedis
 from redis.asyncio.client import Pipeline
 from redis.asyncio.cluster import ClusterPipeline
+from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster
+from redis.cluster import RedisCluster as SyncRedisCluster
 
 from limiters import MaxSleepExceededError
 from limiters.base import AsyncLuaScriptBase, SyncLuaScriptBase
@@ -13,11 +17,25 @@ from limiters.base import AsyncLuaScriptBase, SyncLuaScriptBase
 logger = logging.getLogger(__name__)
 
 
-class SemaphoreBase(BaseModel):
+class SemaphoreBase:
     name: str
-    capacity: int = Field(gt=0)
-    max_sleep: float = Field(ge=0, default=0.0)
-    expiry: int = 30
+    capacity: int
+    max_sleep: float
+    expiry: int
+
+    def _validate(self) -> None:
+        if self.name is None:
+            raise ValueError('name must not be None')
+        try:
+            if self.capacity <= 0:
+                raise ValueError('capacity must be > 0')
+        except TypeError:
+            raise ValueError('capacity must be a number') from None
+        try:
+            if self.max_sleep < 0:
+                raise ValueError('max_sleep must be >= 0')
+        except TypeError:
+            raise ValueError('max_sleep must be a number') from None
 
     @property
     def key(self) -> str:
@@ -33,8 +51,22 @@ class SemaphoreBase(BaseModel):
         return f'Semaphore instance for queue {self.key}'
 
 
-class SyncSemaphore(SemaphoreBase, SyncLuaScriptBase):
+@dataclass
+class SyncSemaphore(SyncLuaScriptBase, SemaphoreBase):
+    if TYPE_CHECKING:
+        connection: SyncRedis[str] | SyncRedisCluster[str]
+    else:
+        connection: SyncRedis | SyncRedisCluster
+    name: str
+    capacity: int
+    max_sleep: float = 0.0
+    expiry: int = 30
+
     script_name: ClassVar[str] = 'semaphore.lua'
+
+    def __post_init__(self) -> None:
+        self._validate()
+        self._register_script()
 
     def __enter__(self) -> None:
         """
@@ -80,8 +112,22 @@ class SyncSemaphore(SemaphoreBase, SyncLuaScriptBase):
         logger.debug('Released semaphore %s', self.name)
 
 
-class AsyncSemaphore(SemaphoreBase, AsyncLuaScriptBase):
+@dataclass
+class AsyncSemaphore(AsyncLuaScriptBase, SemaphoreBase):
+    if TYPE_CHECKING:
+        connection: AsyncRedis[str] | AsyncRedisCluster[str]
+    else:
+        connection: AsyncRedis | AsyncRedisCluster
+    name: str
+    capacity: int
+    max_sleep: float = 0.0
+    expiry: int = 30
+
     script_name: ClassVar[str] = 'semaphore.lua'
+
+    def __post_init__(self) -> None:
+        self._validate()
+        self._register_script()
 
     async def __aenter__(self) -> None:
         """
@@ -107,7 +153,7 @@ class AsyncSemaphore(SemaphoreBase, AsyncLuaScriptBase):
 
         # Raise an exception if we waited too long
         if 0.0 < self.max_sleep < (datetime.now() - start).total_seconds():
-            raise MaxSleepExceededError(f'Max sleep ({self.max_sleep}s) exceeded waiting for Semaphore')
+            raise MaxSleepExceededError(f'Max sleep ({float(self.max_sleep)}s) exceeded waiting for Semaphore')
 
         logger.debug('Acquired semaphore %s', self.name)
 
