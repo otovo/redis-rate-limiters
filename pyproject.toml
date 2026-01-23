@@ -1,6 +1,6 @@
 [project]
 name = "redis-rate-limiters"
-version = "0.4.5"
+version = "0.5.0"
 description = "Distributed rate limiters"
 license = "BSD-4-Clause"
 authors = [{ name = "Sondre Lillebø Gundersen", email = "sondrelg@live.no" }]
